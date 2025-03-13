@@ -1,0 +1,61 @@
+#include <Servo.h>
+#include <DHT.h>
+#include <ArduinoJson.h>
+
+#define DHTPIN  2         // Define o pino usado para o sensor DHT11
+#define DHTTYPE DHT11     // Define o tipo de sensor DHT (DHT11)
+
+DHT dht(DHTPIN, DHTTYPE);
+int LDRPin = A0;
+int servoPin = 3;
+
+Servo servoMotor;
+
+int LDRValue = 0;
+int limiteEnergia = 800;
+
+void setup()
+{
+  Serial.begin(9600);
+  dht.begin();
+  pinMode(servoPin, OUTPUT);
+  servoMotor.attach(servoPin);
+}
+
+void loop()
+{
+  int h = dht.readHumidity();
+  int t = dht.readTemperature();
+  int f = (t * 1.8) + 32;
+  LDRValue = analogRead(LDRPin);
+
+  StaticJsonDocument<100>json;
+  json["Umidade"] = h;
+  json["Luminosidade"] = LDRValue;
+  json["Temperatura"] = f;
+  json["Motor"] = servoMotor.read();
+  
+  serializeJson(json, Serial);
+  
+  Serial.println();
+
+  moverMotor();
+
+  delay(3000);
+}
+
+void moverMotor() {
+   if(Serial.available() > 0) {
+    char comando = Serial.read();
+    if(comando == 'M') {
+      servoMotor.write(90);
+    }
+    else if(comando == 'R'){
+      servoMotor.write(180);
+    }
+    else if(comando == 'L'){
+      servoMotor.write(0);
+    }
+  }
+}
+
